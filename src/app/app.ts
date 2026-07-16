@@ -20,6 +20,31 @@ export class App {
 
   color = "blue"
 
+  mostrar = true
+
+  activar = true
+
+  alumnos = ['ivan', 
+    'miguel',
+    'logan',
+    'johan']
+
+  nuevo = ''
+
+  guardar = true;
+
+  contenido = ''
+
+  actualizar(event: Event){
+    const input = event.target as HTMLInputElement
+    this.contenido = input.value
+    console.log(this.contenido)
+  }
+
+  agregarNuevo(){
+    this.alumnos.push(this.nuevo)
+    this.nuevo = ''
+  }
 
   saludar(){
     alert("HOLA " + this.nombre)

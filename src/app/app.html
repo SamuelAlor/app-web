@@ -13,3 +13,43 @@
 
 <h2 [style.color]="color">CAMBIO DE COLOR</h2>
 <input type="color" [(ngModel)]="color">
+
+<h3>Me llamo {{nombre}}</h3>
+<input type="text" [(ngModel)]="nombre">
+
+<!-- Uso de propiedad if -->
+<br>
+<button (click)="mostrar=!mostrar">
+    Cambiar
+</button>
+
+@if(mostrar){
+    <h3>oculatable {{nombre}}</h3>
+}
+
+<br>
+<ul>
+    @for(alumno of alumnos; track alumno){
+        <li>{{alumno}}</li>
+    }
+</ul>
+<br>
+<input type="text" [(ngModel)]="nuevo" >
+<button (click)="agregarNuevo()">
+    insertar nuevo
+</button>
+
+<h2 [class.rojoGrande]="activar" 
+    [class.azulChico]="!activar"
+    >Estado</h2>
+
+<input [(ngModel)]="nombre" (keyup.enter)="saludar()" >
+
+<br>
+<button (click)="guardar=!guardar" [disabled]="!guardar"> 
+    Guardar
+</button>
+<br>
+
+<input type="text" (change)="actualizar($event)">
+<p>{{contenido}}</p>
