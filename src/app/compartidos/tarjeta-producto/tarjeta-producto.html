@@ -8,8 +8,24 @@
   />
 
   <ng-template #footer>
-    <a [routerLink]="['/productos', producto().id]" pButton>
-      <span pButtonLabel>Ver detalle</span>
-    </a>
+    <div class="acciones">
+      <a [routerLink]="['/productos', producto().id]" pButton>
+        <span pButtonLabel>Ver detalle</span>
+      </a>
+      <p-button
+        [disabled]="agregado()"
+        [severity]="agregado() ? 'success' : 'secondary'"
+        [variant]="agregado() ? undefined : 'outlined'"
+        (onClick)="agregarAFavoritos()"
+      >
+        @if (agregado()) {
+          <svg data-p-icon="heart-fill" size="18" aria-hidden="true"></svg>
+          <span pButtonLabel>Agregado</span>
+        } @else {
+          <svg data-p-icon="heart" size="18" aria-hidden="true"></svg>
+          <span pButtonLabel>Agregar a favoritos</span>
+        }
+      </p-button>
+    </div>
   </ng-template>
 </p-card>

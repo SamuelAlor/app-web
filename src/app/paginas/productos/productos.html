@@ -6,7 +6,11 @@
 
 <section class="cuadricula">
   @for (producto of productos; track producto.id) {
-    <app-tarjeta-producto [producto]="producto" />
+    <app-tarjeta-producto
+      [producto]="producto"
+      [agregado]="favoritosServicio.existe(producto.id)"
+      (favoritoSeleccionado)="agregarAFavoritos($event)"
+    />
   } @empty {
     <p>No hay productos disponibles.</p>
   }

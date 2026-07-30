@@ -19,6 +19,11 @@ export const routes: Routes = [
       )
   },
   {
+    path: 'favoritos',
+    loadComponent: () =>
+      import('./paginas/favoritos/favoritos').then((archivo) => archivo.Favoritos)
+  },
+  {
     path: 'contacto',
     loadComponent: () =>
       import('./paginas/contacto/contacto').then((archivo) => archivo.Contacto)
