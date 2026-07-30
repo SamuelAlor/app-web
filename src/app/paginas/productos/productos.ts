@@ -1,3 +1,4 @@
+import { AsyncPipe } from '@angular/common';
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { ProductosServicio } from '../../servicios/productos';
 import { FavoritosServicio } from '../../servicios/favoritos';
@@ -6,7 +7,7 @@ import { TarjetaProducto } from '../../compartidos/tarjeta-producto/tarjeta-prod
 @Component({
   selector: 'app-productos',
   standalone: true,
-  imports: [TarjetaProducto],
+  imports: [AsyncPipe, TarjetaProducto],
   templateUrl: './productos.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './productos.css',

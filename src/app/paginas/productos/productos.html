@@ -5,7 +5,7 @@
 </header>
 
 <section class="cuadricula">
-  @for (producto of productos; track producto.id) {
+  @for (producto of (productos | async); track producto.id) {
     <app-tarjeta-producto
       [producto]="producto"
       [agregado]="favoritosServicio.existe(producto.id)"

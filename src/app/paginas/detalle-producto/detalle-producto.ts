@@ -1,3 +1,4 @@
+import { AsyncPipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -12,6 +13,7 @@ import { ProductosServicio } from '../../servicios/productos';
   standalone: true,
   imports: [
     RouterLink,
+    AsyncPipe,
     ButtonModule,
     CardModule,
     DialogModule,

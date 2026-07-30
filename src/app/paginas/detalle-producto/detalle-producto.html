@@ -1,4 +1,4 @@
-@if (producto) {
+@if (producto | async; as producto) {
   <section class="detalle">
     <p-card [header]="producto.nombre" subheader="Información del producto">
       <p>{{ producto.descripcion }}</p>

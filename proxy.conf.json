@@ -1,0 +1,7 @@
+{
+  "/api": {
+    "target": "https://practical-courage-production-47af.up.railway.app",
+    "secure": true,
+    "changeOrigin": true
+  }
+}
