@@ -1,0 +1,19 @@
+h1 {
+    color: rgb(98, 14, 232);
+}
+body {
+    background-color: rgb(225, 177, 220);
+}
+button{
+    border-style: dashed;
+    font-size: 20px;
+}
+
+.rojoGrande {
+    color: red;
+    font-size: 64px;
+}
+.azulChico {
+    color: blue;
+    font-size: 10px;
+}

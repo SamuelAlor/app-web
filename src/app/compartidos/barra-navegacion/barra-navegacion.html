@@ -1,0 +1,29 @@
+<p-toolbar>
+  <ng-template #start>
+    <a class="marca" routerLink="/">Catálogo Angular</a>
+  </ng-template>
+
+  <ng-template #end>
+    <nav aria-label="Navegación principal">
+      <a
+        routerLink="/"
+        routerLinkActive="activo"
+        [routerLinkActiveOptions]="{ exact: true }"
+        pButton
+      >
+        <svg data-p-icon="home" size="18" aria-hidden="true"></svg>
+        <span pButtonLabel>Inicio</span>
+      </a>
+
+      <a routerLink="/productos" routerLinkActive="activo" pButton>
+        <svg data-p-icon="box" size="18" aria-hidden="true"></svg>
+        <span pButtonLabel>Productos</span>
+      </a>
+
+      <a routerLink="/contacto" routerLinkActive="activo" pButton>
+        <svg data-p-icon="envelope" size="18" aria-hidden="true"></svg>
+        <span pButtonLabel>Contacto</span>
+      </a>
+    </nav>
+  </ng-template>
+</p-toolbar>
