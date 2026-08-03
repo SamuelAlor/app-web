@@ -4,6 +4,7 @@ import { Box } from '@primeicons/angular/box';
 import { Envelope } from '@primeicons/angular/envelope';
 import { Home } from '@primeicons/angular/home';
 import { Heart } from '@primeicons/angular/heart';
+import { Image } from '@primeicons/angular/image';
 import { ButtonModule } from 'primeng/button';
 import { ToolbarModule } from 'primeng/toolbar';
 
@@ -15,6 +16,7 @@ import { ToolbarModule } from 'primeng/toolbar';
     RouterLinkActive,
     Home,
     Heart,
+    Image,
     Box,
     Envelope,
     ButtonModule,

@@ -29,6 +29,11 @@ export const routes: Routes = [
       import('./paginas/contacto/contacto').then((archivo) => archivo.Contacto)
   },
   {
+    path: 'galeria',
+    loadComponent: () =>
+      import('./paginas/galeria/galeria').then((archivo) => archivo.Galeria)
+  },
+  {
     path: '**',
     loadComponent: () =>
       import('./paginas/no-encontrado/no-encontrado').then(

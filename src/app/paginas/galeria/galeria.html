@@ -1,0 +1,150 @@
+<section class="galeria">
+  <header>
+    <p>COMPONENTES INTERACTIVOS</p>
+    <h1>Galería PrimeNG</h1>
+    <span>Explora las imágenes y personaliza su presentación con los controles.</span>
+  </header>
+
+  <div class="contenido-galeria">
+    <section class="visor" [class]="'visor marco-' + tamanoMarco()">
+      <div class="imagen-principal">
+        <img
+          [src]="imagenActiva().ruta"
+          [alt]="imagenActiva().titulo"
+          [style.transform]="'scale(' + escalaImagen() / 100 + ')'"
+          (error)="manejarErrorImagen($event)"
+        />
+
+        <button
+          type="button"
+          class="navegacion anterior"
+          pButton
+          rounded
+          text
+          severity="secondary"
+          aria-label="Imagen anterior"
+          (click)="anterior()"
+        >
+          <span class="pi pi-chevron-left" aria-hidden="true"></span>
+        </button>
+
+        <button
+          type="button"
+          class="navegacion siguiente"
+          pButton
+          rounded
+          text
+          severity="secondary"
+          aria-label="Imagen siguiente"
+          (click)="siguiente()"
+        >
+          <span class="pi pi-chevron-right" aria-hidden="true"></span>
+        </button>
+
+        <div class="informacion-imagen">
+          <strong>{{ imagenActiva().titulo }}</strong>
+          <span>{{ imagenActiva().descripcion }}</span>
+        </div>
+      </div>
+
+      @if (mostrarMiniaturas()) {
+        <div class="miniaturas">
+          <button
+            type="button"
+            pButton
+            rounded
+            text
+            severity="secondary"
+            aria-label="Desplazar miniaturas hacia atrás"
+            (click)="desplazarMiniaturas(-1)"
+          >
+            <span class="pi pi-chevron-left" aria-hidden="true"></span>
+          </button>
+
+          <div class="lista-miniaturas" #franjaMiniaturas>
+            @for (imagen of imagenes(); track imagen.id; let indice = $index) {
+              <button
+                type="button"
+                class="miniatura"
+                [class.activa]="indice === indiceActivo()"
+                [attr.aria-label]="'Mostrar ' + imagen.titulo"
+                (click)="seleccionarImagen(indice)"
+              >
+                <img [src]="imagen.ruta" [alt]="imagen.titulo" (error)="manejarErrorImagen($event)" />
+              </button>
+            }
+          </div>
+
+          <button
+            type="button"
+            pButton
+            rounded
+            text
+            severity="secondary"
+            aria-label="Desplazar miniaturas hacia adelante"
+            (click)="desplazarMiniaturas(1)"
+          >
+            <span class="pi pi-chevron-right" aria-hidden="true"></span>
+          </button>
+        </div>
+      }
+    </section>
+
+    <p-card header="Controles" class="panel-controles">
+      <div class="controles">
+        <div class="fila-control">
+          <label for="reproduccion">Reproducción automática</label>
+          <p-toggleswitch
+            inputId="reproduccion"
+            [ngModel]="reproduccionAutomatica()"
+            (ngModelChange)="reproduccionAutomatica.set($event)"
+          />
+        </div>
+
+        <div class="fila-control">
+          <label for="miniaturas">Mostrar miniaturas</label>
+          <p-toggleswitch
+            inputId="miniaturas"
+            [ngModel]="mostrarMiniaturas()"
+            (ngModelChange)="mostrarMiniaturas.set($event)"
+          />
+        </div>
+
+        <div class="control-rango">
+          <label for="intervalo">Intervalo: {{ intervalo() }} segundos</label>
+          <p-slider
+            inputId="intervalo"
+            [min]="1"
+            [max]="10"
+            [ngModel]="intervalo()"
+            (ngModelChange)="intervalo.set($event)"
+          />
+        </div>
+
+        <div class="control-rango">
+          <span>Tamaño del marco</span>
+          <p-selectbutton
+            [options]="opcionesTamano"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="tamanoMarco()"
+            (ngModelChange)="tamanoMarco.set($event)"
+            ariaLabel="Tamaño del marco"
+          />
+        </div>
+
+        <div class="control-escala">
+          <span>Escala de imagen</span>
+          <p-knob
+            [min]="50"
+            [max]="150"
+            [step]="5"
+            [ngModel]="escalaImagen()"
+            (ngModelChange)="escalaImagen.set($event)"
+            valueTemplate="{value}%"
+          />
+        </div>
+      </div>
+    </p-card>
+  </div>
+</section>
