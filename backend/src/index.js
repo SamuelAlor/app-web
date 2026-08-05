@@ -5,9 +5,11 @@ import mysql from 'mysql2/promise';
 const aplicacion = express();
 const puerto = Number(process.env.PORT ?? 3000);
 
-// Configuración de CORS
 const origenes = process.env.ORIGENES_PERMITIDOS
-  ? process.env.ORIGENES_PERMITIDOS.split(',')
+  ? process.env.ORIGENES_PERMITIDOS
+      .split(',')
+      .map((origen) => origen.trim())
+      .filter(Boolean)
   : ['http://localhost:4200'];
 
 aplicacion.use(
@@ -19,30 +21,33 @@ aplicacion.use(
 
 aplicacion.use(express.json());
 
-// Conexión a la base de datos MySQL con las nuevas credenciales
 const conexion = mysql.createPool({
-  host: process.env.MYSQLHOST || 'sakura.proxy.rlwy.net',
-  port: Number(process.env.MYSQLPORT) || 46430,
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'tEFmjYOKQITCOZiEVKEqiPPJTeUBhgmQ',
-  database: process.env.MYSQLDATABASE || 'railway',
+  host: process.env.MYSQLHOST,
+  port: Number(process.env.MYSQLPORT),
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
   waitForConnections: true,
   connectionLimit: 5,
   decimalNumbers: true
 });
 
-function validarProducto(datos) {
+
+function validarProducto(datos: any) {
   const producto = {
     nombre: String(datos.nombre ?? '').trim(),
     descripcion: String(datos.descripcion ?? '').trim(),
-    precio: Number(datos.precio)
+    precio: Number(datos.precio),
+    categoria_id: Number(datos.categoria_id)
   };
 
   if (
     !producto.nombre ||
     !producto.descripcion ||
     !Number.isFinite(producto.precio) ||
-    producto.precio <= 0
+    producto.precio <= 0 ||
+    !Number.isInteger(producto.categoria_id) ||
+    producto.categoria_id <= 0
   ) {
     return null;
   }
@@ -50,40 +55,142 @@ function validarProducto(datos) {
   return producto;
 }
 
+function validarCategoria(datos: any) {
+  const categoria = {
+    nombre: String(datos.nombre ?? '').trim(),
+    descripcion: String(datos.descripcion ?? '').trim()
+  };
+
+  if (!categoria.nombre) {
+    return null;
+  }
+
+  return categoria;
+}
+
+function obtenerCodigoMysql(error: unknown): string {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'string'
+  ) {
+    return error.code;
+  }
+
+  return '';
+}
+
+// =============================
+// Ruta principal
+// =============================
+
 aplicacion.get('/', (_solicitud, respuesta) => {
-  respuesta.json({ mensaje: 'API de productos en funcionamiento.' });
+  respuesta.json({
+    mensaje: 'API de productos, categorías y favoritos en funcionamiento.'
+  });
 });
 
-aplicacion.get('/api/productos', async (_solicitud, respuesta) => {
+aplicacion.get('/api/productos', async (solicitud, respuesta) => {
   try {
+    const categoriaId = Number(solicitud.query.categoria_id);
+
+    if (
+      solicitud.query.categoria_id !== undefined &&
+      (!Number.isInteger(categoriaId) || categoriaId <= 0)
+    ) {
+      respuesta.status(400).json({
+        mensaje: 'El identificador de la categoría no es válido.'
+      });
+      return;
+    }
+
+    if (solicitud.query.categoria_id !== undefined) {
+      const [productos] = await conexion.execute(
+        `SELECT
+           p.id,
+           p.nombre,
+           p.descripcion,
+           p.precio,
+           p.categoria_id,
+           c.nombre AS categoria_nombre,
+           EXISTS(
+             SELECT 1
+             FROM favoritos f
+             WHERE f.producto_id = p.id
+           ) AS es_favorito
+         FROM productos p
+         INNER JOIN categorias c ON c.id = p.categoria_id
+         WHERE p.categoria_id = ?
+         ORDER BY p.id`,
+        [categoriaId]
+      );
+
+      respuesta.json(productos);
+      return;
+    }
+
     const [productos] = await conexion.query(
-      `SELECT id, nombre, descripcion, precio
-       FROM productos ORDER BY id`
+      `SELECT
+         p.id,
+         p.nombre,
+         p.descripcion,
+         p.precio,
+         p.categoria_id,
+         c.nombre AS categoria_nombre,
+         EXISTS(
+           SELECT 1
+           FROM favoritos f
+           WHERE f.producto_id = p.id
+         ) AS es_favorito
+       FROM productos p
+       INNER JOIN categorias c ON c.id = p.categoria_id
+       ORDER BY p.id`
     );
+
     respuesta.json(productos);
   } catch (error) {
     console.error(error);
-    respuesta.status(500).json({ mensaje: 'No fue posible consultar.' });
+    respuesta.status(500).json({
+      mensaje: 'No fue posible consultar los productos.'
+    });
   }
 });
 
 aplicacion.get('/api/productos/:id', async (solicitud, respuesta) => {
   try {
-    const [productos] = await conexion.execute(
-      `SELECT id, nombre, descripcion, precio
-       FROM productos WHERE id = ?`,
+    const [productos]: any = await conexion.execute(
+      `SELECT
+         p.id,
+         p.nombre,
+         p.descripcion,
+         p.precio,
+         p.categoria_id,
+         c.nombre AS categoria_nombre,
+         EXISTS(
+           SELECT 1
+           FROM favoritos f
+           WHERE f.producto_id = p.id
+         ) AS es_favorito
+       FROM productos p
+       INNER JOIN categorias c ON c.id = p.categoria_id
+       WHERE p.id = ?`,
       [solicitud.params.id]
     );
 
     if (productos.length === 0) {
-      respuesta.status(404).json({ mensaje: 'Producto no encontrado.' });
+      respuesta.status(404).json({
+        mensaje: 'Producto no encontrado.'
+      });
       return;
     }
 
     respuesta.json(productos[0]);
   } catch (error) {
     console.error(error);
-    respuesta.status(500).json({ mensaje: 'No fue posible consultar.' });
+    respuesta.status(500).json({
+      mensaje: 'No fue posible consultar el producto.'
+    });
   }
 });
 
@@ -91,21 +198,47 @@ aplicacion.post('/api/productos', async (solicitud, respuesta) => {
   const producto = validarProducto(solicitud.body);
 
   if (!producto) {
-    respuesta.status(400).json({ mensaje: 'Los datos no son válidos.' });
+    respuesta.status(400).json({
+      mensaje:
+        'Nombre, descripción, precio y categoría son obligatorios y deben ser válidos.'
+    });
     return;
   }
 
   try {
-    const [resultado] = await conexion.execute(
-      `INSERT INTO productos (nombre, descripcion, precio)
-       VALUES (?, ?, ?)`,
-      [producto.nombre, producto.descripcion, producto.precio]
+    const [categoria]: any = await conexion.execute(
+      'SELECT id FROM categorias WHERE id = ?',
+      [producto.categoria_id]
     );
 
-    respuesta.status(201).json({ id: resultado.insertId, ...producto });
+    if (categoria.length === 0) {
+      respuesta.status(400).json({
+        mensaje: 'La categoría seleccionada no existe.'
+      });
+      return;
+    }
+
+    const [resultado]: any = await conexion.execute(
+      `INSERT INTO productos
+        (nombre, descripcion, precio, categoria_id)
+       VALUES (?, ?, ?, ?)`,
+      [
+        producto.nombre,
+        producto.descripcion,
+        producto.precio,
+        producto.categoria_id
+      ]
+    );
+
+    respuesta.status(201).json({
+      id: resultado.insertId,
+      ...producto
+    });
   } catch (error) {
     console.error(error);
-    respuesta.status(500).json({ mensaje: 'No fue posible guardar.' });
+    respuesta.status(500).json({
+      mensaje: 'No fue posible guardar el producto.'
+    });
   }
 });
 
@@ -113,58 +246,413 @@ aplicacion.put('/api/productos/:id', async (solicitud, respuesta) => {
   const producto = validarProducto(solicitud.body);
 
   if (!producto) {
-    respuesta.status(400).json({ mensaje: 'Los datos no son válidos.' });
+    respuesta.status(400).json({
+      mensaje:
+        'Nombre, descripción, precio y categoría son obligatorios y deben ser válidos.'
+    });
     return;
   }
 
   try {
-    const [resultado] = await conexion.execute(
+    const [categoria]: any = await conexion.execute(
+      'SELECT id FROM categorias WHERE id = ?',
+      [producto.categoria_id]
+    );
+
+    if (categoria.length === 0) {
+      respuesta.status(400).json({
+        mensaje: 'La categoría seleccionada no existe.'
+      });
+      return;
+    }
+
+    const [resultado]: any = await conexion.execute(
       `UPDATE productos
-       SET nombre = ?, descripcion = ?, precio = ?
+       SET
+         nombre = ?,
+         descripcion = ?,
+         precio = ?,
+         categoria_id = ?
        WHERE id = ?`,
       [
         producto.nombre,
         producto.descripcion,
         producto.precio,
+        producto.categoria_id,
         solicitud.params.id
       ]
     );
 
     if (resultado.affectedRows === 0) {
-      respuesta.status(404).json({ mensaje: 'Producto no encontrado.' });
+      respuesta.status(404).json({
+        mensaje: 'Producto no encontrado.'
+      });
       return;
     }
 
-    respuesta.json({ id: Number(solicitud.params.id), ...producto });
+    respuesta.json({
+      id: Number(solicitud.params.id),
+      ...producto
+    });
   } catch (error) {
     console.error(error);
-    respuesta.status(500).json({ mensaje: 'No fue posible actualizar.' });
+    respuesta.status(500).json({
+      mensaje: 'No fue posible actualizar el producto.'
+    });
   }
 });
 
 aplicacion.delete('/api/productos/:id', async (solicitud, respuesta) => {
   try {
-    const [resultado] = await conexion.execute(
+    const [resultado]: any = await conexion.execute(
       'DELETE FROM productos WHERE id = ?',
       [solicitud.params.id]
     );
 
     if (resultado.affectedRows === 0) {
-      respuesta.status(404).json({ mensaje: 'Producto no encontrado.' });
+      respuesta.status(404).json({
+        mensaje: 'Producto no encontrado.'
+      });
       return;
     }
 
     respuesta.status(204).send();
   } catch (error) {
     console.error(error);
-    respuesta.status(500).json({ mensaje: 'No fue posible eliminar.' });
+    respuesta.status(500).json({
+      mensaje: 'No fue posible eliminar el producto.'
+    });
   }
 });
 
-aplicacion.use((error, _solicitud, respuesta, _continuar) => {
-  console.error(error);
-  respuesta.status(403).json({ mensaje: error.message });
+
+
+aplicacion.get('/api/categorias', async (_solicitud, respuesta) => {
+  try {
+    const [categorias] = await conexion.query(
+      `SELECT
+         c.id,
+         c.nombre,
+         c.descripcion,
+         c.created_at,
+         COUNT(p.id) AS total_productos
+       FROM categorias c
+       LEFT JOIN productos p ON p.categoria_id = c.id
+       GROUP BY
+         c.id,
+         c.nombre,
+         c.descripcion,
+         c.created_at
+       ORDER BY c.nombre`
+    );
+
+    respuesta.json(categorias);
+  } catch (error) {
+    console.error(error);
+    respuesta.status(500).json({
+      mensaje: 'No fue posible consultar las categorías.'
+    });
+  }
 });
+
+aplicacion.get('/api/categorias/:id', async (solicitud, respuesta) => {
+  try {
+    const [categorias]: any = await conexion.execute(
+      `SELECT id, nombre, descripcion, created_at
+       FROM categorias
+       WHERE id = ?`,
+      [solicitud.params.id]
+    );
+
+    if (categorias.length === 0) {
+      respuesta.status(404).json({
+        mensaje: 'Categoría no encontrada.'
+      });
+      return;
+    }
+
+    respuesta.json(categorias[0]);
+  } catch (error) {
+    console.error(error);
+    respuesta.status(500).json({
+      mensaje: 'No fue posible consultar la categoría.'
+    });
+  }
+});
+aplicacion.get(
+  '/api/categorias/:id/productos',
+  async (solicitud, respuesta) => {
+    try {
+      const [productos] = await conexion.execute(
+        `SELECT
+           p.id,
+           p.nombre,
+           p.descripcion,
+           p.precio,
+           p.categoria_id,
+           c.nombre AS categoria_nombre,
+           EXISTS(
+             SELECT 1
+             FROM favoritos f
+             WHERE f.producto_id = p.id
+           ) AS es_favorito
+         FROM productos p
+         INNER JOIN categorias c ON c.id = p.categoria_id
+         WHERE p.categoria_id = ?
+         ORDER BY p.id`,
+        [solicitud.params.id]
+      );
+
+      respuesta.json(productos);
+    } catch (error) {
+      console.error(error);
+      respuesta.status(500).json({
+        mensaje: 'No fue posible consultar los productos de la categoría.'
+      });
+    }
+  }
+);
+
+aplicacion.post('/api/categorias', async (solicitud, respuesta) => {
+  const categoria = validarCategoria(solicitud.body);
+
+  if (!categoria) {
+    respuesta.status(400).json({
+      mensaje: 'El nombre de la categoría es obligatorio.'
+    });
+    return;
+  }
+
+  try {
+    const [resultado]: any = await conexion.execute(
+      `INSERT INTO categorias (nombre, descripcion)
+       VALUES (?, ?)`,
+      [categoria.nombre, categoria.descripcion || null]
+    );
+
+    respuesta.status(201).json({
+      id: resultado.insertId,
+      ...categoria
+    });
+  } catch (error) {
+    console.error(error);
+
+    if (obtenerCodigoMysql(error) === 'ER_DUP_ENTRY') {
+      respuesta.status(409).json({
+        mensaje: 'Ya existe una categoría con ese nombre.'
+      });
+      return;
+    }
+
+    respuesta.status(500).json({
+      mensaje: 'No fue posible guardar la categoría.'
+    });
+  }
+});
+
+aplicacion.put('/api/categorias/:id', async (solicitud, respuesta) => {
+  const categoria = validarCategoria(solicitud.body);
+
+  if (!categoria) {
+    respuesta.status(400).json({
+      mensaje: 'El nombre de la categoría es obligatorio.'
+    });
+    return;
+  }
+
+  try {
+    const [resultado]: any = await conexion.execute(
+      `UPDATE categorias
+       SET nombre = ?, descripcion = ?
+       WHERE id = ?`,
+      [
+        categoria.nombre,
+        categoria.descripcion || null,
+        solicitud.params.id
+      ]
+    );
+
+    if (resultado.affectedRows === 0) {
+      respuesta.status(404).json({
+        mensaje: 'Categoría no encontrada.'
+      });
+      return;
+    }
+
+    respuesta.json({
+      id: Number(solicitud.params.id),
+      ...categoria
+    });
+  } catch (error) {
+    console.error(error);
+
+    if (obtenerCodigoMysql(error) === 'ER_DUP_ENTRY') {
+      respuesta.status(409).json({
+        mensaje: 'Ya existe una categoría con ese nombre.'
+      });
+      return;
+    }
+
+    respuesta.status(500).json({
+      mensaje: 'No fue posible actualizar la categoría.'
+    });
+  }
+});
+
+aplicacion.delete('/api/categorias/:id', async (solicitud, respuesta) => {
+  try {
+    const [resultado]: any = await conexion.execute(
+      'DELETE FROM categorias WHERE id = ?',
+      [solicitud.params.id]
+    );
+
+    if (resultado.affectedRows === 0) {
+      respuesta.status(404).json({
+        mensaje: 'Categoría no encontrada.'
+      });
+      return;
+    }
+
+    respuesta.status(204).send();
+  } catch (error) {
+    console.error(error);
+
+    if (
+      obtenerCodigoMysql(error) === 'ER_ROW_IS_REFERENCED_2' ||
+      obtenerCodigoMysql(error) === 'ER_ROW_IS_REFERENCED'
+    ) {
+      respuesta.status(409).json({
+        mensaje:
+          'No se puede eliminar la categoría porque tiene productos relacionados.'
+      });
+      return;
+    }
+
+    respuesta.status(500).json({
+      mensaje: 'No fue posible eliminar la categoría.'
+    });
+  }
+});
+
+aplicacion.get('/api/favoritos', async (_solicitud, respuesta) => {
+  try {
+    const [favoritos] = await conexion.query(
+      `SELECT
+         f.id AS favorito_id,
+         f.producto_id,
+         f.agregado_en,
+         p.id,
+         p.nombre,
+         p.descripcion,
+         p.precio,
+         p.categoria_id,
+         c.nombre AS categoria_nombre,
+         1 AS es_favorito
+       FROM favoritos f
+       INNER JOIN productos p ON p.id = f.producto_id
+       INNER JOIN categorias c ON c.id = p.categoria_id
+       ORDER BY f.agregado_en DESC`
+    );
+
+    respuesta.json(favoritos);
+  } catch (error) {
+    console.error(error);
+    respuesta.status(500).json({
+      mensaje: 'No fue posible consultar los favoritos.'
+    });
+  }
+});
+
+aplicacion.post('/api/favoritos', async (solicitud, respuesta) => {
+  const productoId = Number(solicitud.body.producto_id);
+
+  if (!Number.isInteger(productoId) || productoId <= 0) {
+    respuesta.status(400).json({
+      mensaje: 'El identificador del producto no es válido.'
+    });
+    return;
+  }
+
+  try {
+    const [producto]: any = await conexion.execute(
+      'SELECT id FROM productos WHERE id = ?',
+      [productoId]
+    );
+
+    if (producto.length === 0) {
+      respuesta.status(404).json({
+        mensaje: 'Producto no encontrado.'
+      });
+      return;
+    }
+
+    const [resultado]: any = await conexion.execute(
+      `INSERT INTO favoritos (producto_id)
+       VALUES (?)`,
+      [productoId]
+    );
+
+    respuesta.status(201).json({
+      id: resultado.insertId,
+      producto_id: productoId
+    });
+  } catch (error) {
+    console.error(error);
+
+    if (obtenerCodigoMysql(error) === 'ER_DUP_ENTRY') {
+      respuesta.status(409).json({
+        mensaje: 'El producto ya está en favoritos.'
+      });
+      return;
+    }
+
+    respuesta.status(500).json({
+      mensaje: 'No fue posible agregar el producto a favoritos.'
+    });
+  }
+});
+
+aplicacion.delete(
+  '/api/favoritos/:productoId',
+  async (solicitud, respuesta) => {
+    try {
+      const [resultado]: any = await conexion.execute(
+        'DELETE FROM favoritos WHERE producto_id = ?',
+        [solicitud.params.productoId]
+      );
+
+      if (resultado.affectedRows === 0) {
+        respuesta.status(404).json({
+          mensaje: 'El producto no se encuentra en favoritos.'
+        });
+        return;
+      }
+
+      respuesta.status(204).send();
+    } catch (error) {
+      console.error(error);
+      respuesta.status(500).json({
+        mensaje: 'No fue posible eliminar el favorito.'
+      });
+    }
+  }
+);
+
+
+aplicacion.use(
+  (
+    error: Error,
+    _solicitud: express.Request,
+    respuesta: express.Response,
+    _continuar: express.NextFunction
+  ) => {
+    console.error(error);
+
+    respuesta.status(500).json({
+      mensaje: error.message || 'Ocurrió un error en el servidor.'
+    });
+  }
+);
 
 aplicacion.listen(puerto, '0.0.0.0', () => {
   console.log(`API disponible en el puerto ${puerto}.`);
