@@ -32,8 +32,7 @@ const conexion = mysql.createPool({
   decimalNumbers: true
 });
 
-
-function validarProducto(datos: any) {
+function validarProducto(datos) {
   const producto = {
     nombre: String(datos.nombre ?? '').trim(),
     descripcion: String(datos.descripcion ?? '').trim(),
@@ -55,7 +54,7 @@ function validarProducto(datos: any) {
   return producto;
 }
 
-function validarCategoria(datos: any) {
+function validarCategoria(datos) {
   const categoria = {
     nombre: String(datos.nombre ?? '').trim(),
     descripcion: String(datos.descripcion ?? '').trim()
@@ -68,11 +67,10 @@ function validarCategoria(datos: any) {
   return categoria;
 }
 
-function obtenerCodigoMysql(error: unknown): string {
+function codigoMysql(error) {
   if (
     typeof error === 'object' &&
     error !== null &&
-    'code' in error &&
     typeof error.code === 'string'
   ) {
     return error.code;
@@ -80,10 +78,6 @@ function obtenerCodigoMysql(error: unknown): string {
 
   return '';
 }
-
-// =============================
-// Ruta principal
-// =============================
 
 aplicacion.get('/', (_solicitud, respuesta) => {
   respuesta.json({
@@ -94,35 +88,37 @@ aplicacion.get('/', (_solicitud, respuesta) => {
 aplicacion.get('/api/productos', async (solicitud, respuesta) => {
   try {
     const categoriaId = Number(solicitud.query.categoria_id);
+    const tieneFiltro = solicitud.query.categoria_id !== undefined;
 
     if (
-      solicitud.query.categoria_id !== undefined &&
+      tieneFiltro &&
       (!Number.isInteger(categoriaId) || categoriaId <= 0)
     ) {
       respuesta.status(400).json({
-        mensaje: 'El identificador de la categoría no es válido.'
+        mensaje: 'La categoría indicada no es válida.'
       });
       return;
     }
 
-    if (solicitud.query.categoria_id !== undefined) {
+    if (tieneFiltro) {
       const [productos] = await conexion.execute(
         `SELECT
-           p.id,
-           p.nombre,
-           p.descripcion,
-           p.precio,
-           p.categoria_id,
-           c.nombre AS categoria_nombre,
-           EXISTS(
-             SELECT 1
-             FROM favoritos f
-             WHERE f.producto_id = p.id
-           ) AS es_favorito
-         FROM productos p
-         INNER JOIN categorias c ON c.id = p.categoria_id
-         WHERE p.categoria_id = ?
-         ORDER BY p.id`,
+          p.id,
+          p.nombre,
+          p.descripcion,
+          p.precio,
+          p.categoria_id,
+          c.nombre AS categoria_nombre,
+          EXISTS(
+            SELECT 1
+            FROM favoritos f
+            WHERE f.producto_id = p.id
+          ) AS es_favorito
+        FROM productos p
+        INNER JOIN categorias c
+          ON c.id = p.categoria_id
+        WHERE p.categoria_id = ?
+        ORDER BY p.id`,
         [categoriaId]
       );
 
@@ -132,20 +128,21 @@ aplicacion.get('/api/productos', async (solicitud, respuesta) => {
 
     const [productos] = await conexion.query(
       `SELECT
-         p.id,
-         p.nombre,
-         p.descripcion,
-         p.precio,
-         p.categoria_id,
-         c.nombre AS categoria_nombre,
-         EXISTS(
-           SELECT 1
-           FROM favoritos f
-           WHERE f.producto_id = p.id
-         ) AS es_favorito
-       FROM productos p
-       INNER JOIN categorias c ON c.id = p.categoria_id
-       ORDER BY p.id`
+        p.id,
+        p.nombre,
+        p.descripcion,
+        p.precio,
+        p.categoria_id,
+        c.nombre AS categoria_nombre,
+        EXISTS(
+          SELECT 1
+          FROM favoritos f
+          WHERE f.producto_id = p.id
+        ) AS es_favorito
+      FROM productos p
+      INNER JOIN categorias c
+        ON c.id = p.categoria_id
+      ORDER BY p.id`
     );
 
     respuesta.json(productos);
@@ -159,22 +156,23 @@ aplicacion.get('/api/productos', async (solicitud, respuesta) => {
 
 aplicacion.get('/api/productos/:id', async (solicitud, respuesta) => {
   try {
-    const [productos]: any = await conexion.execute(
+    const [productos] = await conexion.execute(
       `SELECT
-         p.id,
-         p.nombre,
-         p.descripcion,
-         p.precio,
-         p.categoria_id,
-         c.nombre AS categoria_nombre,
-         EXISTS(
-           SELECT 1
-           FROM favoritos f
-           WHERE f.producto_id = p.id
-         ) AS es_favorito
-       FROM productos p
-       INNER JOIN categorias c ON c.id = p.categoria_id
-       WHERE p.id = ?`,
+        p.id,
+        p.nombre,
+        p.descripcion,
+        p.precio,
+        p.categoria_id,
+        c.nombre AS categoria_nombre,
+        EXISTS(
+          SELECT 1
+          FROM favoritos f
+          WHERE f.producto_id = p.id
+        ) AS es_favorito
+      FROM productos p
+      INNER JOIN categorias c
+        ON c.id = p.categoria_id
+      WHERE p.id = ?`,
       [solicitud.params.id]
     );
 
@@ -199,29 +197,28 @@ aplicacion.post('/api/productos', async (solicitud, respuesta) => {
 
   if (!producto) {
     respuesta.status(400).json({
-      mensaje:
-        'Nombre, descripción, precio y categoría son obligatorios y deben ser válidos.'
+      mensaje: 'Los datos del producto no son válidos.'
     });
     return;
   }
 
   try {
-    const [categoria]: any = await conexion.execute(
+    const [categorias] = await conexion.execute(
       'SELECT id FROM categorias WHERE id = ?',
       [producto.categoria_id]
     );
 
-    if (categoria.length === 0) {
+    if (categorias.length === 0) {
       respuesta.status(400).json({
         mensaje: 'La categoría seleccionada no existe.'
       });
       return;
     }
 
-    const [resultado]: any = await conexion.execute(
+    const [resultado] = await conexion.execute(
       `INSERT INTO productos
         (nombre, descripcion, precio, categoria_id)
-       VALUES (?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?)`,
       [
         producto.nombre,
         producto.descripcion,
@@ -247,33 +244,32 @@ aplicacion.put('/api/productos/:id', async (solicitud, respuesta) => {
 
   if (!producto) {
     respuesta.status(400).json({
-      mensaje:
-        'Nombre, descripción, precio y categoría son obligatorios y deben ser válidos.'
+      mensaje: 'Los datos del producto no son válidos.'
     });
     return;
   }
 
   try {
-    const [categoria]: any = await conexion.execute(
+    const [categorias] = await conexion.execute(
       'SELECT id FROM categorias WHERE id = ?',
       [producto.categoria_id]
     );
 
-    if (categoria.length === 0) {
+    if (categorias.length === 0) {
       respuesta.status(400).json({
         mensaje: 'La categoría seleccionada no existe.'
       });
       return;
     }
 
-    const [resultado]: any = await conexion.execute(
+    const [resultado] = await conexion.execute(
       `UPDATE productos
-       SET
-         nombre = ?,
-         descripcion = ?,
-         precio = ?,
-         categoria_id = ?
-       WHERE id = ?`,
+      SET
+        nombre = ?,
+        descripcion = ?,
+        precio = ?,
+        categoria_id = ?
+      WHERE id = ?`,
       [
         producto.nombre,
         producto.descripcion,
@@ -304,7 +300,7 @@ aplicacion.put('/api/productos/:id', async (solicitud, respuesta) => {
 
 aplicacion.delete('/api/productos/:id', async (solicitud, respuesta) => {
   try {
-    const [resultado]: any = await conexion.execute(
+    const [resultado] = await conexion.execute(
       'DELETE FROM productos WHERE id = ?',
       [solicitud.params.id]
     );
@@ -325,25 +321,24 @@ aplicacion.delete('/api/productos/:id', async (solicitud, respuesta) => {
   }
 });
 
-
-
 aplicacion.get('/api/categorias', async (_solicitud, respuesta) => {
   try {
     const [categorias] = await conexion.query(
       `SELECT
-         c.id,
-         c.nombre,
-         c.descripcion,
-         c.created_at,
-         COUNT(p.id) AS total_productos
-       FROM categorias c
-       LEFT JOIN productos p ON p.categoria_id = c.id
-       GROUP BY
-         c.id,
-         c.nombre,
-         c.descripcion,
-         c.created_at
-       ORDER BY c.nombre`
+        c.id,
+        c.nombre,
+        c.descripcion,
+        c.created_at,
+        COUNT(p.id) AS total_productos
+      FROM categorias c
+      LEFT JOIN productos p
+        ON p.categoria_id = c.id
+      GROUP BY
+        c.id,
+        c.nombre,
+        c.descripcion,
+        c.created_at
+      ORDER BY c.nombre`
     );
 
     respuesta.json(categorias);
@@ -357,10 +352,10 @@ aplicacion.get('/api/categorias', async (_solicitud, respuesta) => {
 
 aplicacion.get('/api/categorias/:id', async (solicitud, respuesta) => {
   try {
-    const [categorias]: any = await conexion.execute(
+    const [categorias] = await conexion.execute(
       `SELECT id, nombre, descripcion, created_at
-       FROM categorias
-       WHERE id = ?`,
+      FROM categorias
+      WHERE id = ?`,
       [solicitud.params.id]
     );
 
@@ -379,27 +374,41 @@ aplicacion.get('/api/categorias/:id', async (solicitud, respuesta) => {
     });
   }
 });
+
 aplicacion.get(
   '/api/categorias/:id/productos',
   async (solicitud, respuesta) => {
     try {
+      const [categorias] = await conexion.execute(
+        'SELECT id FROM categorias WHERE id = ?',
+        [solicitud.params.id]
+      );
+
+      if (categorias.length === 0) {
+        respuesta.status(404).json({
+          mensaje: 'Categoría no encontrada.'
+        });
+        return;
+      }
+
       const [productos] = await conexion.execute(
         `SELECT
-           p.id,
-           p.nombre,
-           p.descripcion,
-           p.precio,
-           p.categoria_id,
-           c.nombre AS categoria_nombre,
-           EXISTS(
-             SELECT 1
-             FROM favoritos f
-             WHERE f.producto_id = p.id
-           ) AS es_favorito
-         FROM productos p
-         INNER JOIN categorias c ON c.id = p.categoria_id
-         WHERE p.categoria_id = ?
-         ORDER BY p.id`,
+          p.id,
+          p.nombre,
+          p.descripcion,
+          p.precio,
+          p.categoria_id,
+          c.nombre AS categoria_nombre,
+          EXISTS(
+            SELECT 1
+            FROM favoritos f
+            WHERE f.producto_id = p.id
+          ) AS es_favorito
+        FROM productos p
+        INNER JOIN categorias c
+          ON c.id = p.categoria_id
+        WHERE p.categoria_id = ?
+        ORDER BY p.id`,
         [solicitud.params.id]
       );
 
@@ -424,9 +433,9 @@ aplicacion.post('/api/categorias', async (solicitud, respuesta) => {
   }
 
   try {
-    const [resultado]: any = await conexion.execute(
+    const [resultado] = await conexion.execute(
       `INSERT INTO categorias (nombre, descripcion)
-       VALUES (?, ?)`,
+      VALUES (?, ?)`,
       [categoria.nombre, categoria.descripcion || null]
     );
 
@@ -437,7 +446,7 @@ aplicacion.post('/api/categorias', async (solicitud, respuesta) => {
   } catch (error) {
     console.error(error);
 
-    if (obtenerCodigoMysql(error) === 'ER_DUP_ENTRY') {
+    if (codigoMysql(error) === 'ER_DUP_ENTRY') {
       respuesta.status(409).json({
         mensaje: 'Ya existe una categoría con ese nombre.'
       });
@@ -461,10 +470,10 @@ aplicacion.put('/api/categorias/:id', async (solicitud, respuesta) => {
   }
 
   try {
-    const [resultado]: any = await conexion.execute(
+    const [resultado] = await conexion.execute(
       `UPDATE categorias
-       SET nombre = ?, descripcion = ?
-       WHERE id = ?`,
+      SET nombre = ?, descripcion = ?
+      WHERE id = ?`,
       [
         categoria.nombre,
         categoria.descripcion || null,
@@ -486,7 +495,7 @@ aplicacion.put('/api/categorias/:id', async (solicitud, respuesta) => {
   } catch (error) {
     console.error(error);
 
-    if (obtenerCodigoMysql(error) === 'ER_DUP_ENTRY') {
+    if (codigoMysql(error) === 'ER_DUP_ENTRY') {
       respuesta.status(409).json({
         mensaje: 'Ya existe una categoría con ese nombre.'
       });
@@ -501,7 +510,7 @@ aplicacion.put('/api/categorias/:id', async (solicitud, respuesta) => {
 
 aplicacion.delete('/api/categorias/:id', async (solicitud, respuesta) => {
   try {
-    const [resultado]: any = await conexion.execute(
+    const [resultado] = await conexion.execute(
       'DELETE FROM categorias WHERE id = ?',
       [solicitud.params.id]
     );
@@ -518,8 +527,8 @@ aplicacion.delete('/api/categorias/:id', async (solicitud, respuesta) => {
     console.error(error);
 
     if (
-      obtenerCodigoMysql(error) === 'ER_ROW_IS_REFERENCED_2' ||
-      obtenerCodigoMysql(error) === 'ER_ROW_IS_REFERENCED'
+      codigoMysql(error) === 'ER_ROW_IS_REFERENCED_2' ||
+      codigoMysql(error) === 'ER_ROW_IS_REFERENCED'
     ) {
       respuesta.status(409).json({
         mensaje:
@@ -538,20 +547,21 @@ aplicacion.get('/api/favoritos', async (_solicitud, respuesta) => {
   try {
     const [favoritos] = await conexion.query(
       `SELECT
-         f.id AS favorito_id,
-         f.producto_id,
-         f.agregado_en,
-         p.id,
-         p.nombre,
-         p.descripcion,
-         p.precio,
-         p.categoria_id,
-         c.nombre AS categoria_nombre,
-         1 AS es_favorito
-       FROM favoritos f
-       INNER JOIN productos p ON p.id = f.producto_id
-       INNER JOIN categorias c ON c.id = p.categoria_id
-       ORDER BY f.agregado_en DESC`
+        f.id AS favorito_id,
+        f.producto_id,
+        p.id,
+        p.nombre,
+        p.descripcion,
+        p.precio,
+        p.categoria_id,
+        c.nombre AS categoria_nombre,
+        1 AS es_favorito
+      FROM favoritos f
+      INNER JOIN productos p
+        ON p.id = f.producto_id
+      INNER JOIN categorias c
+        ON c.id = p.categoria_id
+      ORDER BY f.id DESC`
     );
 
     respuesta.json(favoritos);
@@ -574,21 +584,21 @@ aplicacion.post('/api/favoritos', async (solicitud, respuesta) => {
   }
 
   try {
-    const [producto]: any = await conexion.execute(
+    const [productos] = await conexion.execute(
       'SELECT id FROM productos WHERE id = ?',
       [productoId]
     );
 
-    if (producto.length === 0) {
+    if (productos.length === 0) {
       respuesta.status(404).json({
         mensaje: 'Producto no encontrado.'
       });
       return;
     }
 
-    const [resultado]: any = await conexion.execute(
+    const [resultado] = await conexion.execute(
       `INSERT INTO favoritos (producto_id)
-       VALUES (?)`,
+      VALUES (?)`,
       [productoId]
     );
 
@@ -599,7 +609,7 @@ aplicacion.post('/api/favoritos', async (solicitud, respuesta) => {
   } catch (error) {
     console.error(error);
 
-    if (obtenerCodigoMysql(error) === 'ER_DUP_ENTRY') {
+    if (codigoMysql(error) === 'ER_DUP_ENTRY') {
       respuesta.status(409).json({
         mensaje: 'El producto ya está en favoritos.'
       });
@@ -616,7 +626,7 @@ aplicacion.delete(
   '/api/favoritos/:productoId',
   async (solicitud, respuesta) => {
     try {
-      const [resultado]: any = await conexion.execute(
+      const [resultado] = await conexion.execute(
         'DELETE FROM favoritos WHERE producto_id = ?',
         [solicitud.params.productoId]
       );
@@ -638,21 +648,13 @@ aplicacion.delete(
   }
 );
 
+aplicacion.use((error, _solicitud, respuesta, _continuar) => {
+  console.error(error);
 
-aplicacion.use(
-  (
-    error: Error,
-    _solicitud: express.Request,
-    respuesta: express.Response,
-    _continuar: express.NextFunction
-  ) => {
-    console.error(error);
-
-    respuesta.status(500).json({
-      mensaje: error.message || 'Ocurrió un error en el servidor.'
-    });
-  }
-);
+  respuesta.status(500).json({
+    mensaje: error.message || 'Ocurrió un error en el servidor.'
+  });
+});
 
 aplicacion.listen(puerto, '0.0.0.0', () => {
   console.log(`API disponible en el puerto ${puerto}.`);
