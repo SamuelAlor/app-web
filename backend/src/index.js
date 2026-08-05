@@ -328,7 +328,6 @@ aplicacion.get('/api/categorias', async (_solicitud, respuesta) => {
         c.id,
         c.nombre,
         c.descripcion,
-        c.created_at,
         COUNT(p.id) AS total_productos
       FROM categorias c
       LEFT JOIN productos p
@@ -336,8 +335,7 @@ aplicacion.get('/api/categorias', async (_solicitud, respuesta) => {
       GROUP BY
         c.id,
         c.nombre,
-        c.descripcion,
-        c.created_at
+        c.descripcion
       ORDER BY c.nombre`
     );
 
@@ -349,13 +347,12 @@ aplicacion.get('/api/categorias', async (_solicitud, respuesta) => {
     });
   }
 });
-
 aplicacion.get('/api/categorias/:id', async (solicitud, respuesta) => {
   try {
     const [categorias] = await conexion.execute(
-      `SELECT id, nombre, descripcion, created_at
-      FROM categorias
-      WHERE id = ?`,
+    `SELECT id, nombre, descripcion
+FROM categorias
+WHERE id = ?`
       [solicitud.params.id]
     );
 
