@@ -1,41 +1,35 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
-import { NuevoProducto, Producto } from '../modelos/producto';
+import { Categoria, NuevaCategoria } from '../modelos/categoria';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
-export class ProductosApiServicio {
+export class CategoriasServicio {
   private readonly http = inject(HttpClient);
-  private readonly url = `${environment.apiUrl}/api/productos`;
+  private readonly url = `${environment.apiUrl}/api/categorias`;
 
-  listar(): Observable<Producto[]> {
+  listar(): Observable<Categoria[]> {
     return this.http
-      .get<Producto[]>(this.url)
+      .get<Categoria[]>(this.url)
       .pipe(catchError((error) => this.manejarError(error)));
   }
 
-  obtenerPorId(id: number): Observable<Producto> {
+  obtenerPorId(id: number): Observable<Categoria> {
     return this.http
-      .get<Producto>(`${this.url}/${id}`)
+      .get<Categoria>(`${this.url}/${id}`)
       .pipe(catchError((error) => this.manejarError(error)));
   }
 
-  listarPorCategoria(categoriaId: number): Observable<Producto[]> {
+  crear(categoria: NuevaCategoria): Observable<Categoria> {
     return this.http
-      .get<Producto[]>(`${this.url}?categoria_id=${categoriaId}`)
+      .post<Categoria>(this.url, categoria)
       .pipe(catchError((error) => this.manejarError(error)));
   }
 
-  crear(producto: NuevoProducto): Observable<Producto> {
+  actualizar(id: number, categoria: NuevaCategoria): Observable<Categoria> {
     return this.http
-      .post<Producto>(this.url, producto)
-      .pipe(catchError((error) => this.manejarError(error)));
-  }
-
-  actualizar(id: number, producto: NuevoProducto): Observable<Producto> {
-    return this.http
-      .put<Producto>(`${this.url}/${id}`, producto)
+      .put<Categoria>(`${this.url}/${id}`, categoria)
       .pipe(catchError((error) => this.manejarError(error)));
   }
 

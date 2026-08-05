@@ -1,6 +1,13 @@
 <p-card [header]="producto().nombre">
   <p>{{ producto().descripcion }}</p>
 
+  @if (producto().categoria_nombre) {
+    <p>
+      Categoría:
+      <strong>{{ producto().categoria_nombre }}</strong>
+    </p>
+  }
+
   <p-tag
     severity="success"
     [rounded]="true"
@@ -12,17 +19,27 @@
       <a [routerLink]="['/productos', producto().id]" pButton>
         <span pButtonLabel>Ver detalle</span>
       </a>
+
       <p-button
-        [disabled]="agregado()"
-        [severity]="agregado() ? 'success' : 'secondary'"
+        [severity]="agregado() ? 'danger' : 'secondary'"
         [variant]="agregado() ? undefined : 'outlined'"
-        (onClick)="agregarAFavoritos()"
+        (onClick)="cambiarFavorito()"
       >
         @if (agregado()) {
-          <svg data-p-icon="heart-fill" size="18" aria-hidden="true"></svg>
-          <span pButtonLabel>Agregado</span>
+          <svg
+            data-p-icon="heart-fill"
+            size="18"
+            aria-hidden="true"
+          ></svg>
+
+          <span pButtonLabel>Quitar de favoritos</span>
         } @else {
-          <svg data-p-icon="heart" size="18" aria-hidden="true"></svg>
+          <svg
+            data-p-icon="heart"
+            size="18"
+            aria-hidden="true"
+          ></svg>
+
           <span pButtonLabel>Agregar a favoritos</span>
         }
       </p-button>

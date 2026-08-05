@@ -24,6 +24,13 @@ export const routes: Routes = [
       import('./paginas/favoritos/favoritos').then((archivo) => archivo.Favoritos)
   },
   {
+  path: 'categorias',
+  loadComponent: () =>
+    import('./paginas/categorias/categorias').then(
+      (archivo) => archivo.Categorias
+    )
+},
+  {
     path: 'contacto',
     loadComponent: () =>
       import('./paginas/contacto/contacto').then((archivo) => archivo.Contacto)

@@ -1,0 +1,85 @@
+.pagina-categorias {
+  display: grid;
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.encabezado p,
+.productos-categoria header p {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12rem;
+}
+
+.encabezado h1,
+.productos-categoria h2 {
+  margin: 0.35rem 0;
+}
+
+.formulario {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(16rem, 2fr) auto;
+  gap: 1rem;
+  align-items: end;
+  padding: 1.25rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 1rem;
+  background: var(--p-content-background);
+}
+
+.campo {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.campo label {
+  font-weight: 600;
+}
+
+.lista-categorias,
+.cuadricula-productos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.productos-categoria {
+  display: grid;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--p-content-border-color);
+}
+
+.formulario-dialogo {
+  display: grid;
+  gap: 1rem;
+}
+
+.cargando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+:host ::ng-deep .seleccionada .p-card {
+  outline: 2px solid var(--p-primary-color);
+}
+
+@media (max-width: 760px) {
+  .pagina-categorias {
+    padding: 1rem;
+  }
+
+  .formulario {
+    grid-template-columns: 1fr;
+  }
+}

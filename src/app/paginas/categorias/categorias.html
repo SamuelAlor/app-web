@@ -1,0 +1,210 @@
+<section class="pagina-categorias">
+  <header class="encabezado">
+    <p>CATÁLOGO EN MYSQL</p>
+    <h1>Categorías</h1>
+    <span>
+      Registra, edita, elimina y consulta los productos de cada categoría.
+    </span>
+  </header>
+
+  <form class="formulario" (ngSubmit)="crearCategoria()">
+    <div class="campo">
+      <label for="nombre-categoria">Nombre</label>
+      <input
+        id="nombre-categoria"
+        name="nombre"
+        pInputText
+        [ngModel]="nombreNuevo()"
+        (ngModelChange)="nombreNuevo.set($event)"
+      />
+    </div>
+
+    <div class="campo descripcion">
+      <label for="descripcion-categoria">Descripción</label>
+      <input
+        id="descripcion-categoria"
+        name="descripcion"
+        pInputText
+        [ngModel]="descripcionNueva()"
+        (ngModelChange)="descripcionNueva.set($event)"
+      />
+    </div>
+
+    <p-button
+      label="Crear categoría"
+      type="submit"
+      [disabled]="cargando()"
+    />
+  </form>
+
+  @if (error()) {
+    <p-message
+      severity="error"
+      closable
+      (onClose)="error.set(null)"
+    >
+      {{ error() }}
+    </p-message>
+  }
+
+  @if (cargando()) {
+    <div class="cargando">
+      <p-progressspinner strokeWidth="4" />
+      <span>Actualizando información...</span>
+    </div>
+  }
+
+  <section class="lista-categorias">
+    @for (categoria of categorias(); track categoria.id) {
+      <p-card
+        [header]="categoria.nombre"
+        [subheader]="categoria.descripcion"
+        [class.seleccionada]="categoriaSeleccionada()?.id === categoria.id"
+      >
+        <p>
+          Productos relacionados:
+          <strong>{{ categoria.total_productos ?? 0 }}</strong>
+        </p>
+
+        <ng-template #footer>
+          <div class="acciones">
+            <p-button
+              label="Ver productos"
+              icon="pi pi-search"
+              size="small"
+              (onClick)="seleccionarCategoria(categoria)"
+            />
+
+            <p-button
+              label="Editar"
+              icon="pi pi-pencil"
+              size="small"
+              severity="secondary"
+              variant="outlined"
+              (onClick)="abrirEdicion(categoria)"
+            />
+
+            <p-button
+              label="Eliminar"
+              icon="pi pi-trash"
+              size="small"
+              severity="danger"
+              variant="outlined"
+              (onClick)="abrirEliminacion(categoria)"
+            />
+          </div>
+        </ng-template>
+      </p-card>
+    } @empty {
+      <p>No existen categorías registradas.</p>
+    }
+  </section>
+
+  @if (categoriaSeleccionada(); as categoria) {
+    <section class="productos-categoria">
+      <header>
+        <p>PRODUCTOS FILTRADOS</p>
+        <h2>{{ categoria.nombre }}</h2>
+      </header>
+
+      <div class="cuadricula-productos">
+        @for (producto of productos(); track producto.id) {
+          <p-card [header]="producto.nombre">
+            <p>{{ producto.descripcion }}</p>
+
+            <strong>
+              {{
+                producto.precio
+                  | currency: 'MXN' : 'symbol-narrow' : '1.2-2' : 'es-MX'
+              }}
+            </strong>
+          </p-card>
+        } @empty {
+          <p>Esta categoría todavía no tiene productos relacionados.</p>
+        }
+      </div>
+    </section>
+  }
+</section>
+
+<p-dialog
+  header="Editar categoría"
+  [visible]="dialogoEdicion()"
+  [modal]="true"
+  [style]="{ width: 'min(32rem, 90vw)' }"
+  (visibleChange)="dialogoEdicion.set($event)"
+  (onHide)="cerrarDialogos()"
+>
+  <div class="formulario-dialogo">
+    <div class="campo">
+      <label for="nombre-edicion">Nombre</label>
+      <input
+        id="nombre-edicion"
+        pInputText
+        [ngModel]="nombreEdicion()"
+        (ngModelChange)="nombreEdicion.set($event)"
+      />
+    </div>
+
+    <div class="campo">
+      <label for="descripcion-edicion">Descripción</label>
+      <input
+        id="descripcion-edicion"
+        pInputText
+        [ngModel]="descripcionEdicion()"
+        (ngModelChange)="descripcionEdicion.set($event)"
+      />
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <p-button
+      label="Cancelar"
+      severity="secondary"
+      variant="text"
+      (onClick)="dialogoEdicion.set(false)"
+    />
+
+    <p-button
+      label="Guardar cambios"
+      [disabled]="cargando()"
+      (onClick)="guardarEdicion()"
+    />
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  header="Eliminar categoría"
+  [visible]="dialogoEliminacion()"
+  [modal]="true"
+  [style]="{ width: 'min(28rem, 90vw)' }"
+  (visibleChange)="dialogoEliminacion.set($event)"
+  (onHide)="cerrarDialogos()"
+>
+  @if (categoriaEnEdicion(); as categoria) {
+    <p>
+      ¿Deseas eliminar la categoría
+      <strong>{{ categoria.nombre }}</strong>?
+    </p>
+
+    <p>
+      No se podrá eliminar si tiene productos relacionados.
+    </p>
+  }
+
+  <ng-template #footer>
+    <p-button
+      label="Cancelar"
+      severity="secondary"
+      variant="text"
+      (onClick)="dialogoEliminacion.set(false)"
+    />
+
+    <p-button
+      label="Eliminar"
+      severity="danger"
+      [disabled]="cargando()"
+      (onClick)="confirmarEliminacion()"
+    />
+  </ng-template>
+</p-dialog>
