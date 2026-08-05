@@ -1,5 +1,7 @@
 import { AsyncPipe } from '@angular/common';
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
 import { ProductosServicio } from '../../servicios/productos';
 import { FavoritosServicio } from '../../servicios/favoritos';
 import { Producto } from '../../modelos/producto';
@@ -7,7 +9,7 @@ import { TarjetaProducto } from '../../compartidos/tarjeta-producto/tarjeta-prod
 @Component({
   selector: 'app-productos',
   standalone: true,
-  imports: [AsyncPipe, TarjetaProducto],
+  imports: [AsyncPipe, RouterLink, ButtonModule, TarjetaProducto],
   templateUrl: './productos.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './productos.css',

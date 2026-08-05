@@ -34,6 +34,13 @@ export const routes: Routes = [
       import('./paginas/galeria/galeria').then((archivo) => archivo.Galeria)
   },
   {
+    path: 'admin-productos',
+    loadComponent: () =>
+      import('./paginas/admin-productos/admin-productos').then(
+        (archivo) => archivo.AdminProductos
+      )
+  },
+  {
     path: '**',
     loadComponent: () =>
       import('./paginas/no-encontrado/no-encontrado').then(

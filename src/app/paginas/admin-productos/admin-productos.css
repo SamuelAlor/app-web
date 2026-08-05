@@ -1,0 +1,119 @@
+.admin-productos {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.encabezado p {
+  margin-bottom: 0.4rem;
+  color: var(--p-primary-color);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.encabezado h1 {
+  margin-bottom: 0.5rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.encabezado span {
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.selector-vista {
+  width: fit-content;
+}
+
+.formulario {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(220px, 1.5fr) minmax(160px, 0.75fr) auto;
+  gap: 1rem;
+  align-items: end;
+  padding: 1.25rem;
+  border: 1px solid #dbe3ef;
+  border-radius: 1rem;
+  background: white;
+  box-shadow: 0 10px 25px rgb(15 23 42 / 7%);
+}
+
+.campo {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.campo label {
+  font-weight: 650;
+}
+
+.campo input,
+.campo p-inputnumber {
+  width: 100%;
+}
+
+.campo p-inputnumber ::ng-deep input {
+  width: 100%;
+}
+
+.cargando {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: #4b5563;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cuadricula {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+.cuadricula p {
+  min-height: 3rem;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.formulario-edicion {
+  display: grid;
+  gap: 1rem;
+}
+
+.detalle-producto {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+}
+
+.detalle-producto div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.detalle-producto dt {
+  font-weight: 700;
+}
+
+.detalle-producto dd {
+  margin: 0;
+  color: #4b5563;
+}
+
+@media (max-width: 880px) {
+  .formulario {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .formulario {
+    grid-template-columns: 1fr;
+  }
+}

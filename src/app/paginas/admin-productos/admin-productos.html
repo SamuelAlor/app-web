@@ -1,0 +1,179 @@
+<section class="admin-productos">
+  <header class="encabezado">
+    <p>CATÁLOGO EN MYSQL</p>
+    <h1>Administración de productos</h1>
+    <span>Consulta, agrega, edita y elimina productos almacenados en la API.</span>
+  </header>
+
+  <div class="selector-vista">
+    <p-selectbutton
+      [options]="opcionesVista"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="vistaActual()"
+      (ngModelChange)="vistaActual.set($event)"
+      ariaLabel="Vista de productos"
+    />
+  </div>
+
+  <form class="formulario" (ngSubmit)="crearProducto()">
+    <div class="campo">
+      <label for="nombre-nuevo">Nombre</label>
+      <input
+        id="nombre-nuevo"
+        name="nombre"
+        pInputText
+        [ngModel]="nombreNuevo()"
+        (ngModelChange)="nombreNuevo.set($event)"
+      />
+    </div>
+
+    <div class="campo campo-descripcion">
+      <label for="descripcion-nueva">Descripción</label>
+      <input
+        id="descripcion-nueva"
+        name="descripcion"
+        pInputText
+        [ngModel]="descripcionNueva()"
+        (ngModelChange)="descripcionNueva.set($event)"
+      />
+    </div>
+
+    <div class="campo">
+      <label for="precio-nuevo">Precio</label>
+      <p-inputnumber
+        inputId="precio-nuevo"
+        name="precio"
+        mode="currency"
+        currency="MXN"
+        locale="es-MX"
+        [min]="0"
+        [ngModel]="precioNuevo()"
+        (ngModelChange)="precioNuevo.set($event)"
+      />
+    </div>
+
+    <p-button label="Insertar nuevo" type="submit" [disabled]="cargando()" />
+  </form>
+
+  @if (error()) {
+    <p-message severity="error" closable (onClose)="error.set(null)">{{ error() }}</p-message>
+  }
+
+  @if (cargando()) {
+    <div class="cargando" aria-live="polite">
+      <p-progressspinner strokeWidth="4" />
+      <span>Actualizando productos...</span>
+    </div>
+  } @else if (vistaActual() === 'tabla') {
+    <p-table [value]="productos()" [tableStyle]="{ 'min-width': '44rem' }">
+      <ng-template #header>
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Precio</th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-producto>
+        <tr>
+          <td>{{ producto.nombre }}</td>
+          <td>{{ producto.descripcion }}</td>
+          <td>{{ producto.precio | currency: 'MXN' : 'symbol-narrow' : '1.2-2' : 'es-MX' }}</td>
+          <td>
+            <div class="acciones">
+              <p-button label="Ver" size="small" (onClick)="abrirDetalle(producto)" />
+              <p-button label="Editar" size="small" severity="secondary" variant="outlined" (onClick)="abrirEdicion(producto)" />
+              <p-button label="Eliminar" size="small" severity="danger" variant="outlined" (onClick)="abrirDialogoEliminar(producto)" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="4">No hay productos disponibles.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  } @else {
+    <section class="cuadricula">
+      @for (producto of productos(); track producto.id) {
+        <p-card [header]="producto.nombre">
+          <p>{{ producto.descripcion }}</p>
+          <strong>{{ producto.precio | currency: 'MXN' : 'symbol-narrow' : '1.2-2' : 'es-MX' }}</strong>
+          <ng-template #footer>
+            <div class="acciones">
+              <p-button label="Ver" size="small" (onClick)="abrirDetalle(producto)" />
+              <p-button label="Editar" size="small" severity="secondary" variant="outlined" (onClick)="abrirEdicion(producto)" />
+              <p-button label="Eliminar" size="small" severity="danger" variant="outlined" (onClick)="abrirDialogoEliminar(producto)" />
+            </div>
+          </ng-template>
+        </p-card>
+      } @empty {
+        <p>No hay productos disponibles.</p>
+      }
+    </section>
+  }
+</section>
+
+<p-dialog
+  header="Detalle del producto"
+  [visible]="dialogoDetalle()"
+  [modal]="true"
+  [style]="{ width: 'min(28rem, 90vw)' }"
+  (visibleChange)="dialogoDetalle.set($event)"
+  (onHide)="cerrarDialogos()"
+>
+  @if (productoSeleccionado(); as producto) {
+    <dl class="detalle-producto">
+      <div><dt>Nombre</dt><dd>{{ producto.nombre }}</dd></div>
+      <div><dt>Descripción</dt><dd>{{ producto.descripcion }}</dd></div>
+      <div><dt>Precio</dt><dd>{{ producto.precio | currency: 'MXN' : 'symbol-narrow' : '1.2-2' : 'es-MX' }}</dd></div>
+    </dl>
+  }
+</p-dialog>
+
+<p-dialog
+  header="Editar producto"
+  [visible]="dialogoEdicion()"
+  [modal]="true"
+  [style]="{ width: 'min(32rem, 90vw)' }"
+  (visibleChange)="dialogoEdicion.set($event)"
+  (onHide)="cerrarDialogos()"
+>
+  <div class="formulario-edicion">
+    <div class="campo">
+      <label for="nombre-edicion">Nombre</label>
+      <input id="nombre-edicion" pInputText [ngModel]="nombreEdicion()" (ngModelChange)="nombreEdicion.set($event)" />
+    </div>
+    <div class="campo">
+      <label for="descripcion-edicion">Descripción</label>
+      <input id="descripcion-edicion" pInputText [ngModel]="descripcionEdicion()" (ngModelChange)="descripcionEdicion.set($event)" />
+    </div>
+    <div class="campo">
+      <label for="precio-edicion">Precio</label>
+      <p-inputnumber inputId="precio-edicion" mode="currency" currency="MXN" locale="es-MX" [min]="0" [ngModel]="precioEdicion()" (ngModelChange)="precioEdicion.set($event)" />
+    </div>
+  </div>
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" variant="text" (onClick)="dialogoEdicion.set(false)" />
+    <p-button label="Guardar cambios" [disabled]="cargando()" (onClick)="guardarEdicion()" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  header="Eliminar producto"
+  [visible]="dialogoEliminacion()"
+  [modal]="true"
+  [style]="{ width: 'min(28rem, 90vw)' }"
+  (visibleChange)="dialogoEliminacion.set($event)"
+  (onHide)="cerrarDialogos()"
+>
+  @if (productoSeleccionado(); as producto) {
+    <p>¿Deseas eliminar <strong>{{ producto.nombre }}</strong> de la base de datos?</p>
+  }
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" variant="text" (onClick)="dialogoEliminacion.set(false)" />
+    <p-button label="Eliminar" severity="danger" [disabled]="cargando()" (onClick)="confirmarEliminacion()" />
+  </ng-template>
+</p-dialog>
